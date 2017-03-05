@@ -1,36 +1,32 @@
 import Vapor
 import Fluent
 
-public final class Dealership: Model {
-    public var id: Node?
+public final class Dealership: BaseModel {
     public var name: String
-    public var exists = false
 
     public init(name: String) {
         self.name = name
+        super.init()
     }
 
-    public init(node: Node, in context: Context) throws {
-        self.id = try node.extract("id")
+    public required init(node: Node, in context: Context) throws {
         self.name = try node.extract("name")
+        
+        try super.init(node: node, in: context)
     }
 
-    public func makeNode(context: Context) throws -> Node {
-        return try Node(node: [
-            "id": self.id,
-            "name": self.name,
-        ])
+    public override func makeNode(context: Context) throws -> Node {
+        var node = try super.makeNode(context: context)
+
+        node["name"] = self.name.makeNode()
+
+        return node
     }
 
-    public static func prepare(_ database: Database) throws {
-        try database.create("users") { users in
-            users.id()
-            users.string("name")
-        }
-    }
+    override class func prepare(_ model: Schema.Creator) throws {
+        model.string("name")
 
-    public static func revert(_ database: Database) throws {
-        try database.delete(self.entity)
+        try super.prepare(model)
     }
 }
 
