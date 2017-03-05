@@ -2,6 +2,7 @@ import XCTest
 
 import Vapor
 import VaporMemory
+import Turnstile
 
 @testable import AppLogic
 
@@ -14,24 +15,22 @@ class AppLogicTests: XCTestCase {
     override func setUp() {
         let driver = VaporMemoryDriver()
         let database = Database(driver)
-        Dealership.database = database
-        Car.database = database
+        Admin.database = database
+        Log.database = database
     }
 
     func testSQL() throws {
-        var dealership = Dealership(name: "Jim's Cars")
-        try dealership.save()
+        let credentials = UsernamePassword(username: "test@email.com", password: "password")
+        var admin = try Admin.register(credentials: credentials) as? Admin
+        try admin?.save()
 
-        var car1 = Car(make: "Honda", model: "Civic")
-        car1.dealershipId = dealership.id
-        try car1.save()
+        var log1 = Log(method: "GET", path: "/test", duration: 0.034)
+        try log1.save()
 
-        var car2 = Car(make: "Toyota", model: "Corolla")
-        car2.dealershipId = dealership.id
-        try car2.save()
-
-        let cars = try dealership.cars()
-        XCTAssertEqual("\(try cars.makeQuery().sql)", "select(\"cars\", [(Car) dealership_id equals number(1)], [], [], nil)")
+        XCTAssertEqual(
+            "\(try admin?.logs().makeQuery().sql)",
+            "Optional(Fluent.SQL.select(\"logs\", [(Log) admin_id equals number(1)], [], [], nil))"
+        )
     }
 
 }
